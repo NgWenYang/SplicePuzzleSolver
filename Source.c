@@ -14,7 +14,7 @@ int maxstep = 1;//total steps allowed
 
 
 int pos[2][8][128] = { { { 0,1 },{ 0,1,1 },{ 0,1,0 } } };//initial stage, all single pos assumed as left side
-														 //0 = empty, 1 = occupied, 2~4 = special, -1 = original 
+//0 = empty, 1 = occupied, 2~4 = special, -1 = original 
 int temppos[2][2][8][128];//[step x 2][space, 0 is main, 1 is temporary][vertical][horizontal]
 
 int main()

@@ -5,17 +5,17 @@ void Show();
 void Display();
 void Detach(int a, int B);
 void Attach(int a, int B);
-void Possiblepath(int stepleft);
+void SeekPath(int stepleft);
 void Sideswitch(int a, int B);
 void DuplicPos(int s, char x);
 
-int maxlength = 5;//if no solution found, maxlength++ << will be applied later 
-int maxstep = 1;//total steps allowed
+int maxlength = 5;//precision. if no solution found, maxlength++ << will be applied later 
+int maxstep = 2;//total steps allowed
 
 
-int pos[2][8][128] = { { { 0,1 },{ 0,1,1 },{ 0,1,0 } } };//initial stage, all single pos assumed as left side
+int pos[2][8][128] = { { { 0,1 },{ 0,1,1 }, { 0,1,1 } } };//initial stage, all single pos assumed as left side
 														 //0 = empty, 1 = occupied, 2~4 = special, -1 = original 
-int temppos[2][2][8][128];//[step x 2][space, 0 is main, 1 is temporary][vertical][horizontal]
+int temppos[13][2][8][128];//[step +11 ][space, 0 is main, 1 is temporary][vertical][horizontal]
 
 int main()
 {
@@ -30,8 +30,10 @@ int main()
 	Sideswitch(1, 2);
 	printf("\nSwitch node (1,2) with node (1,1) (switching adjacent nodes with the same parent):\n");
 	Display();*/
-	Possiblepath(1);
-	system("pause");
+	printf("Initial stage:\n");
+	Show();
+	SeekPath(maxstep);
+	getchar();
 	return 0;
 }
 
@@ -69,13 +71,10 @@ void Display()
 
 void Detach(int a, int B)
 {
-	int i, j, b, flag = 0, tempa, tempB;
+	int i, j, b, tempa, tempB;
 	tempa = a;
 	tempB = B;
-	if (B % 2 == 1)
-	{
-		flag = 1;
-	}
+	
 	for (i = 0, b = B;i <= maxlength;i++, a++, B *= 2, b = B)
 	{
 		for (j = (int)pow(2, i);j >= 1;j--, b--)
@@ -84,27 +83,46 @@ void Detach(int a, int B)
 			pos[0][a][b] = 0;
 		}
 	}
-	//pos[0][tempa][tempB] = -1;
-	if (flag == 1) Sideswitch(tempa, tempB);
+	if (tempB % 2 == 1)
+	{
+		if (pos[0][tempa][tempB + 1] == 1)
+		{
+			Sideswitch(tempa, tempB);
+			pos[0][tempa][tempB+1] = -2;
+		}
+		else 
+		{
+			pos[0][tempa][tempB] = -1;
+			pos[0][tempa][tempB+1] = -1;
+		}
+	}
+	else pos[0][tempa][tempB] = -1;
 }
 
 void Attach(int a, int B)
 {
 	int i, j, b;
+	for (i = 1;i <= maxlength;i++)
+	{
+		for (j = 1;j <= (int)pow(2, i);j++)
+			if (pos[0][i][j] == -2 || pos[0][i][j] == -1)
+				pos[0][i][j] = 0;
+	}
 	for (i = 0, b = B;i <= maxlength;i++, a++, B *= 2, b = B)
 	{
 		for (j = (int)pow(2, i);j >= 1;j--, b--)
 		{
+			
 			pos[0][a][b] = pos[1][i][j];
 			pos[1][i][j] = 0;
 		}
 	}
 }
 
-void Possiblepath(int stepleft)
+void SeekPath(int stepleft)
 {
 	int i, j, k, l;
-	DuplicPos(0, 'b');
+	DuplicPos(stepleft, 'b');
 	for (i = 1;i <= maxlength;i++)
 	{
 		for (j = 1;j <= (int)pow(2, i);j++)
@@ -114,41 +132,99 @@ void Possiblepath(int stepleft)
 			else
 			{
 				Detach(i, j);
-				DuplicPos(1, 'b');
+				DuplicPos(stepleft+10, 'b');
 				for (k = 1;k <= maxlength;k++)
 				{
 					for (l = 1;l <= (int)pow(2, i);l++)
 					{
-						if (pos[0][k][l] == 0 && pos[0][k - 1][(l + 1) / 2] == 1)
+						if (pos[0][k][l] != 1 && pos[0][k - 1][(l + 1) / 2] == 1)
 						{
-							if (l % 2 == 1)
+							if (l % 2 == 1 && pos[0][k][l] != -1)
 							{
 								Attach(k, l);
-								printf("%d,%d ---> %d,%d:\n", i, j, k, l);
-								Display();
+								printf("\nstep%d %d,%d ---> %d,%d:\n", 3 - stepleft, i, j, k, l);
+								Show();
+								if (stepleft > 1)
+									SeekPath(stepleft - 1);
 							}
 							else if (l % 2 == 0 && pos[0][k][l - 1] == 1)
 							{
-								Sideswitch(k, l - 1);
-								Attach(k, l - 1);
-								//if (stepleft > 1)
-								//{
-								//	Possiblepath(stepleft - 1);
-								//}
-								//else 
-								printf("%d,%d ---> %d,%d:\n", i, j, k, l - 1);
-								Display();
-								DuplicPos(1, 'r');
-								Attach(k, l);
-								printf("%d,%d ---> %d,%d:\n", i, j, k, l);
-								Display();
+								if (pos[0][k][l] == -1)//case 1 -1 ---> 1  1
+								{
+									Sideswitch(k, l - 1);
+									Attach(k, l - 1);
+									printf("\nstep%d %d,%d ---> %d,%d:\n", 3 - stepleft, i, j, k, l - 1);
+									Show();
+									if (stepleft > 1)
+										SeekPath(stepleft - 1);
+								}
+								else if (pos[0][k][l] == -2)//case 1 -2 ---> 1  1
+								{
+									Attach(k, l);
+									printf("\nstep%d %d,%d ---> %d,%d:\n", 3 - stepleft, i, j, k, l);
+									Show();
+									if (stepleft > 1)
+										SeekPath(stepleft - 1);
+								}
+								else if (pos[0][k][l] == 0)//case 1  0 ---> 1  1 ,two ways to attach, left and right
+								{
+									//attach left
+									Sideswitch(k, l - 1);
+									Attach(k, l - 1);
+									printf("\nstep%d %d,%d ---> %d,%d:\n", 3 - stepleft, i, j, k, l - 1);
+									Show();
+									if (stepleft > 1)
+										SeekPath(stepleft - 1);
+									DuplicPos(stepleft + 10, 'r');
+									
+									//attach right
+									Attach(k, l);
+									printf("\nstep%d %d,%d ---> %d,%d:\n", 3 - stepleft, i, j, k, l);
+									Show();
+									if (stepleft > 1)
+										SeekPath(stepleft - 1);
+								}
 							}
-							DuplicPos(1, 'r');
+							DuplicPos(stepleft + 10, 'r');
 						}
-						//if (pos[0][i][j] == -1) pos[0][i][j] = 0;
+						/*if (pos[0][k][l] != 1 && pos[0][k][l] != -1 && pos[0][k - 1][(l + 1) / 2] == 1)
+						{
+							if (l % 2 == 1 && pos[0][k][l + 1] != 1)//both left and right side are empty
+							{
+								Attach(k, l);
+								printf("\nstep%d %d,%d ---> %d,%d:\n",3-stepleft , i, j, k, l);
+								Show();
+								if (stepleft > 1)
+									SeekPath(stepleft - 1);
+							}
+							else if (l % 2 == 0 && pos[0][k][l - 1] == 1)//left side is occupied but right is empty, so there are two ways to attach
+							{
+								//left side
+
+								if (pos[0][k][l] != -2)
+								{
+									Sideswitch(k, l - 1);
+									Attach(k, l - 1);
+									printf("\nstep%d %d,%d ---> %d,%d:\n", 3 - stepleft, i, j, k, l - 1);
+									Show();
+									if (stepleft > 1)
+										SeekPath(stepleft - 1);
+									DuplicPos(stepleft + 10, 'r');
+								}
+
+								//right side
+								Attach(k, l);
+								printf("\nstep%d %d,%d ---> %d,%d:\n", 3 - stepleft, i, j, k, l);
+								Show();
+								if (stepleft > 1)
+									SeekPath(stepleft - 1);
+
+							}
+							DuplicPos(stepleft+10, 'r');
+						}*/
 					}
 				}
-				DuplicPos(0, 'r');
+				DuplicPos(stepleft, 'r');
 			}
 		}
 	}

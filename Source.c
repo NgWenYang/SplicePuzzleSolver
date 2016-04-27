@@ -12,24 +12,23 @@ void DuplicPos(int s, char x);
 int maxlength = 4;//precision. if no solution found, maxlength++ << will be applied later 
 int maxstep = 2;//total steps allowed
 
-
-int pos[2][9][513] = { { { 0,1 },{ 0,1,1 },{0, 1, 0, 1} } };//input initial stage here, the first node is starting from array 1 for horizontal
-//initial stage, all single pos assumed as left side
+//the first node is starting from array 1 for horizontal
+//initial stage, all single node assumed to be placed left side
 //0 = empty, 1 = occupied, 2~4 = special, -1/-2 = original or only single side allowed, will be changed to 0 after Attach()
-//[step +11 ][space, 0 is main, 1 is temporary][vertical ---> (maxlength + 1)][horizontal ---> 2^(maxlength + 1) ]
-int temppos[13][2][9][513];
+//[maxstep*2][space, 0 is main, 1 is temporary][vertical ---> (maxlength + 1)][horizontal ---> 2^(maxlength + 1) ]
+int temppos[6][2][9][513];//to backup and restore in multiple steps mode
+int pos[2][9][513] = { { { 0,1 },{ 0,1,1 },{ 0, 1, 0, 1 } } };//input initial stage here
 
 int main()
 {
-	
 	printf("Initial stage:\n");
 	Display();
-	SeekPath(maxstep);
+	SeekPath(maxstep);//print all possible paths
 	getchar();
 	return 0;
 }
 
-void Show()
+void Show()//simple version of printing
 {
 	int i, j;
 	for (i = 0;i <= maxlength;i++)
@@ -40,7 +39,7 @@ void Show()
 	}
 }
 
-void Display()
+void Display()//print in a binary tree shpe
 {
 	int i, j, k, l;
 	for (i = 0;i <= maxlength;i++)
@@ -114,7 +113,7 @@ void Attach(int a, int B)
 void SeekPath(int stepleft)
 {
 	int i, j, k, l;
-	DuplicPos(stepleft-1, 'b');
+	DuplicPos(stepleft - 1, 'b');
 	for (i = 1;i <= maxlength;i++)
 	{
 		for (j = 1;j <= (int)pow(2, i);j++)
@@ -127,7 +126,7 @@ void SeekPath(int stepleft)
 				DuplicPos(stepleft + maxstep - 1, 'b');
 				for (k = 1;k <= maxlength;k++)
 				{
-					for (l = 1;l <= (int)pow(2, i);l++)
+					for (l = 1;l <= (int)pow(2, k);l++)
 					{
 						if (pos[0][k][l] != 1 && pos[0][k - 1][(l + 1) / 2] == 1)
 						{
@@ -181,13 +180,13 @@ void SeekPath(int stepleft)
 						}
 					}
 				}
-				DuplicPos(stepleft-1, 'r');
+				DuplicPos(stepleft - 1, 'r');
 			}
 		}
 	}
 }
 
-void Sideswitch(int a, int B)//a,b are the position of the left side
+void Sideswitch(int a, int B)//switch between adjacent nodes
 {
 	int i, j, b, temp;
 	if (B % 2 == 0)
@@ -208,9 +207,9 @@ void Sideswitch(int a, int B)//a,b are the position of the left side
 
 }
 
-void DuplicPos(int s, char x)
+void DuplicPos(int s, char x)//backup and restore stages in multiple steps
 {
-	if (x == 'b')
+	if (x == 'b')//backup
 	{
 		int i, j;
 		for (i = 0;i <= maxlength;i++)
@@ -222,7 +221,7 @@ void DuplicPos(int s, char x)
 			}
 		}
 	}
-	else if (x == 'r')
+	else if (x == 'r')//restore
 	{
 		int i, j;
 		for (i = 0;i <= maxlength;i++)
@@ -236,7 +235,7 @@ void DuplicPos(int s, char x)
 	}
 }
 
-void Active()
+void Active()// not implemanted yet
 {
 	int i = 0;
 }

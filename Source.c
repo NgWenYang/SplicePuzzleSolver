@@ -20,16 +20,16 @@ void Compare(int preactiveCount, int postactiveCount, int stepleft, int beforeDe
 bool Match();
 
 
-int maxlength = 4;//precision. if no solution found, maxlength++ << will be applied later 
-int maxstep = 2;//total steps allowed
+int maxlength = 5;//precision. if no solution found, maxlength++ << will be applied later 
+int maxstep = 3;//total steps allowed
 
 //the first node is starting from array 1 for horizontal
 //initial stage, all single node assumed to be placed left side
 //0=empty 1=occupied 2=split 3=extend 4=discard -1/-2=original or only single side allowed, will be changed to 0 after Attach()
 //[(maxstep*3)+1][space, 0 is main, 1 is temporary][vertical ---> (maxlength + 1)][horizontal ---> 2^(maxlength + 1) ]
-int temppos[9][2][9][513];//to backup and restore in multiple steps mode
-int pos[2][9][513]  = { { { 0,1 },{ 0,1,1},{ 0,2} } };//input initial stage here
-int posTarget[2][9][513]= { { { 0,1 },{ 0,1 },{ 0,1,1 },{0, 1,1} } };//input target stage here //can only have 1 & 0
+int temppos[11][2][9][513];//to backup and restore in multiple steps mode
+int pos[2][9][513] = { { { 0,1 },{ 0,1},{ 0,1,1},{0,0,0,2 } } };//input initial stage here
+int posTarget[2][9][513] = { { { 0,1 },{ 0,1,1 },{ 0,1,0,1},{0,1,0,0,0,1} } };//input target stage here //can only have 1 & 0
 
 int main()
 {
@@ -173,10 +173,16 @@ void SeekPath(int stepleft)
 		}
 	}
 	DuplicatePos(stepleft, 'b');
+	//printf("stepleft:%d\n",stepleft);
+	//DisplayPrev(stepleft);
 	for (x = 0; x <= activeCount;x++)
 	{
-		Active(x);
-		Compare(x, 0, stepleft, 1);
+		if (x != 0)
+		{
+			Active(x);
+			//printf("active count:%d stepleft:%d\n", activeCount, stepleft);
+			Compare(x, 0, stepleft, 1);
+		}
 		if (stepleft > 0)
 		{
 			DuplicatePos((stepleft + maxstep), 'b');
@@ -194,17 +200,18 @@ void SeekPath(int stepleft)
 						{
 							for (l = 1;l <= (int)pow(2, k);l++)
 							{
-								if (pos[0][k][l] != 1 && pos[0][k - 1][(l + 1) / 2] >= 1)
+								if (pos[0][k][l] < 1 && pos[0][k - 1][(l + 1) / 2] >= 1)
 								{
 									if (l % 2 == 1 && pos[0][k][l] == 0)
 									{
 										Attach(k, l);
-										//printf("\nstep%d %d,%d ---> %d,%d:\n", maxstep + 1 - stepleft, i, j, k, l);
+										//printf("\n1step%d %d,%d ---> %d,%d:\n", maxstep + 1 - stepleft, i, j, k, l);
 										//Display();
 										if (stepleft > 1)
 										{
 											SaveStep(i, j, k, l, x, stepleft);
 											Compare(x, 0, stepleft, 0);
+											//printf("1");
 											SeekPath(stepleft - 1);
 										}
 										else
@@ -215,18 +222,19 @@ void SeekPath(int stepleft)
 											//printf("1");
 										}
 									}
-									else if (l % 2 == 0 && pos[0][k][l - 1] >= 1 && pos[0][k][l - 1] != 2)
+									else if (l % 2 == 0 && pos[0][k][l - 1] >= 1 && pos[0][k][l - 1] != 2 && pos[1][0][1] != 2)
 									{
 										if (pos[0][k][l] == -1)//case 1 -1 ---> 1  1
 										{
 											SideSwitch(k, l - 1);
 											Attach(k, l - 1);
-											//printf("\nstep%d %d,%d ---> %d,%d:\n", maxstep + 1 - stepleft, i, j, k, l - 1);
+											//printf("\n2step%d %d,%d ---> %d,%d:\n", maxstep + 1 - stepleft, i, j, k, l - 1);
 											//Display();
 											if (stepleft > 1)
 											{
 												SaveStep(i, j, k, l - 1, x, stepleft);
 												Compare(x, 0, stepleft, 0);
+												//printf("2");
 												SeekPath(stepleft - 1);
 											}
 											else
@@ -240,12 +248,13 @@ void SeekPath(int stepleft)
 										else if (pos[0][k][l] == -2)//case 1 -2 ---> 1  1
 										{
 											Attach(k, l);
-											//printf("\nstep%d %d,%d ---> %d,%d:\n", maxstep + 1 - stepleft, i, j, k, l);
+											//printf("\n3step%d %d,%d ---> %d,%d:\n", maxstep + 1 - stepleft, i, j, k, l);
 											//Display();
 											if (stepleft > 1)
 											{
 												SaveStep(i, j, k, l, x, stepleft);
 												Compare(x, 0, stepleft, 0);
+												//printf("3");
 												SeekPath(stepleft - 1);
 											}
 											else
@@ -261,12 +270,13 @@ void SeekPath(int stepleft)
 											//attach left
 											SideSwitch(k, l - 1);
 											Attach(k, l - 1);
-											//printf("\nstep%d %d,%d ---> %d,%d:\n", maxstep + 1 - stepleft, i, j, k, l - 1);
+											//printf("\n4step%d %d,%d ---> %d,%d:\n", maxstep + 1 - stepleft, i, j, k, l - 1);
 											//Display();
 											if (stepleft > 1)
 											{
 												SaveStep(i, j, k, l - 1, x, stepleft);
 												Compare(x, 0, stepleft, 0);
+												//printf("4");
 												SeekPath(stepleft - 1);
 											}
 											else
@@ -280,12 +290,13 @@ void SeekPath(int stepleft)
 
 											//attach right
 											Attach(k, l);
-											//printf("\nstep%d %d,%d ---> %d,%d:\n", maxstep + 1 - stepleft, i, j, k, l);
+											//printf("\n5step%d %d,%d ---> %d,%d:\n", maxstep + 1 - stepleft, i, j, k, l);
 											//Display();
 											if (stepleft > 1)
 											{
 												SaveStep(i, j, k, l, x, stepleft);
 												Compare(x, 0, stepleft, 0);
+												//printf("5");
 												SeekPath(stepleft - 1);
 											}
 											else
@@ -423,24 +434,42 @@ void Compare(int preactiveCount, int postactiveCount, int stepleft, int beforeDe
 	if (Match())
 	{
 		int n, currentStep = 1;
-		for (n = (maxstep * 3);n > (maxstep * 2) + stepleft - 1;n--, currentStep++)
+		if (beforeDetach == 0)
 		{
-			if (beforeDetach == 1)//function actived before detach
+			for (n = (maxstep * 3);n > (maxstep * 2) + stepleft - 1;n--, currentStep++)
 			{
-				printf("Active:%d\n", preactiveCount);
-				Display();
 
+				if (n == (maxstep * 2) + stepleft)//last step, including number of activation after moving
+				{
+					printf("Last Step %d: Active:%d (%d,%d) -> (%d,%d) Actice:%d\n", currentStep, preactiveCount, temppos[n][0][0][3], temppos[n][0][0][4], temppos[n][0][0][5], temppos[n][0][0][6], postactiveCount);
+					Display();
+				}
+				else//normal steps
+				{
+					printf("Step %d: Active:%d (%d,%d) -> (%d,%d)\n", currentStep, temppos[n][0][0][7], temppos[n][0][0][3], temppos[n][0][0][4], temppos[n][0][0][5], temppos[n][0][0][6]);
+					DisplayPrev(n - maxstep - maxstep - 1);
+				}
 			}
-			else if (n == (maxstep * 2) + stepleft)//last step
+		}
+		if (beforeDetach == 1)//function actived before detach
+		{
+			for (n = (maxstep * 3);n > (maxstep * 2) + stepleft -1;n--, currentStep++)
 			{
-				printf("last Step %d: Active:%d (%d,%d) -> (%d,%d) Actice:%d\n", currentStep, preactiveCount, temppos[n][0][0][3], temppos[n][0][0][4], temppos[n][0][0][5], temppos[n][0][0][6], postactiveCount);
-				Display();
+
+				if (n == (maxstep * 2) + stepleft +1)//last step
+				{
+					printf("Last Step %d: Active:%d (%d,%d) -> (%d,%d)\n", currentStep, temppos[n][0][0][7], temppos[n][0][0][3], temppos[n][0][0][4], temppos[n][0][0][5], temppos[n][0][0][6]);
+					DisplayPrev(n - maxstep - maxstep - 1);
+					printf("Active:%d\n", preactiveCount);
+					Display();
+				}
+				else//normal steps
+				{
+					printf("Step %d: Active:%d (%d,%d) -> (%d,%d)\n", currentStep, temppos[n][0][0][7], temppos[n][0][0][3], temppos[n][0][0][4], temppos[n][0][0][5], temppos[n][0][0][6]);
+					DisplayPrev(n - maxstep - maxstep - 1);
+				}
 			}
-			else//normal steps
-			{
-				printf("normal Step %d: Active:%d (%d,%d) -> (%d,%d)\n", currentStep, temppos[n][0][0][7], temppos[n][0][0][3], temppos[n][0][0][4], temppos[n][0][0][5], temppos[n][0][0][6]);
-				DisplayPrev(currentStep);
-			}
+			
 		}
 		getchar();
 	}

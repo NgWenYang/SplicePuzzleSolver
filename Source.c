@@ -20,22 +20,24 @@ void Compare(int preactiveCount, int postactiveCount, int stepleft, int beforeDe
 bool Match();
 
 
-int maxlength = 5;//precision. if no solution found, maxlength++ << will be applied later 
-int maxstep = 3;//total steps allowed
+int maxlength = 4;//precision. if no solution found, maxlength++ << will be applied later 
+int maxstep = 1;//total steps allowed
 
 //the first node is starting from array 1 for horizontal
 //initial stage, all single node assumed to be placed left side
 //0=empty 1=occupied 2=split 3=extend 4=discard -1/-2=original or only single side allowed, will be changed to 0 after Attach()
 //[(maxstep*3)+1][space, 0 is main, 1 is temporary][vertical ---> (maxlength + 1)][horizontal ---> 2^(maxlength + 1) ]
 int temppos[11][2][9][513];//to backup and restore in multiple steps mode
-int pos[2][9][513] = { { { 0,1 },{ 0,1},{ 0,1,1},{0,0,0,2 } } };//input initial stage here
-int posTarget[2][9][513] = { { { 0,1 },{ 0,1,1 },{ 0,1,0,1},{0,1,0,0,0,1} } };//input target stage here //can only have 1 & 0
+int pos[2][9][513] = { { { 0,1 },{ 0,2},{ 0,1,3 } }  };//input initial stage here
+int posTarget[9][513] = { { 0,1 },{ 0,1,1 },{0,1,1,1,1},{ 0,0,0,1,0,1,0 } };//input target stage here //can only have 1 & 0
 
 int main()
 {
 	printf("Initial stage:\n");
 	Display();
 	SeekPath(maxstep);//print all possible paths
+	//Active(1);
+	//Display();
 	getchar();
 	return 0;
 }
@@ -463,6 +465,11 @@ void Compare(int preactiveCount, int postactiveCount, int stepleft, int beforeDe
 					printf("Active:%d\n", preactiveCount);
 					Display();
 				}
+				else if (maxstep == 0)
+				{
+					printf("Active:%d\n", preactiveCount);
+					Display();
+				}
 				else//normal steps
 				{
 					printf("Step %d: Active:%d (%d,%d) -> (%d,%d)\n", currentStep, temppos[n][0][0][7], temppos[n][0][0][3], temppos[n][0][0][4], temppos[n][0][0][5], temppos[n][0][0][6]);
@@ -491,7 +498,7 @@ bool Match()
 	{
 		for (j = 1;j <= (int)pow(2, i);j++)
 		{
-			if (pos[0][i][j] == posTarget[0][i][j])
+			if (pos[0][i][j] == posTarget[i][j])
 				continue;
 			else
 				return false;

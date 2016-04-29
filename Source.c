@@ -14,30 +14,28 @@ void DuplicatePos(int s, char x);
 void Split(int a, int B);
 void Extend(int a, int b);
 void Discard(int a, int B);
-void Active(int n);
+int Active(int laststep);
 void SaveStep(int i, int j, int k, int l, int activeCount, int stepleft);
 void Compare(int preactiveCount, int postactiveCount, int stepleft, int beforeDetach);
 bool Match();
 
 
-int maxlength = 4;//precision. if no solution found, maxlength++ << will be applied later 
-int maxstep = 1;//total steps allowed
+int maxlength = 6;//precision. if no solution found, maxlength++ << will be applied later 
+int maxstep = 2;//total steps allowed
 
 //the first node is starting from array 1 for horizontal
 //initial stage, all single node assumed to be placed left side
 //0=empty 1=occupied 2=split 3=extend 4=discard -1/-2=original or only single side allowed, will be changed to 0 after Attach()
-//[(maxstep*3)+1][space, 0 is main, 1 is temporary][vertical ---> (maxlength + 1)][horizontal ---> 2^(maxlength + 1) ]
-int temppos[11][2][9][513];//to backup and restore in multiple steps mode
-int pos[2][9][513] = { { { 0,1 },{ 0,2},{ 0,1,3 } }  };//input initial stage here
-int posTarget[9][513] = { { 0,1 },{ 0,1,1 },{0,1,1,1,1},{ 0,0,0,1,0,1,0 } };//input target stage here //can only have 1 & 0
+//[(maxstep*4)+1][space, 0 is main, 1 is temporary][vertical ---> (maxlength + 1)][horizontal ---> 2^(maxlength + 1) ]
+int temppos[9][2][16][65537];//to backup and restore in multiple steps mode
+int pos[2][16][65537] = { { { 0,1 },{ 0,1},{ 0,1,3 },{0,0,0,2},{0,0,0,0,0,2} } };//input initial stage here
+int posTarget[16][65537] = { { 0,1 },{0,1,1},{0,1,0,1},{ 0,1,1,0,0 } };//input target stage here //can only have 1 & 0
 
 int main()
 {
 	printf("Initial stage:\n");
 	Display();
 	SeekPath(maxstep);//print all possible paths
-	//Active(1);
-	//Display();
 	getchar();
 	return 0;
 }
@@ -115,7 +113,7 @@ void Detach(int a, int B)
 	tempa = a;
 	tempB = B;
 
-	for (i = 0, b = B;i <= maxlength;i++, a++, B *= 2, b = B)
+	for (i = 0, b = B;i <= maxlength - tempa;i++, a++, B *= 2, b = B)
 	{
 		for (j = (int)pow(2, i);j >= 1;j--, b--)
 		{
@@ -141,14 +139,15 @@ void Detach(int a, int B)
 
 void Attach(int a, int B)
 {
-	int i, j, b;
-	for (i = 1;i <= maxlength;i++)
+	int g, h, i, j, b, tempa;
+	tempa = a;
+	for (g = 1;g <= maxlength;g++)
 	{
-		for (j = 1;j <= (int)pow(2, i);j++)
-			if (pos[0][i][j] < 0)
-				pos[0][i][j] = 0;
+		for (h = 1;h <= (int)pow(2, g);h++)
+			if (pos[0][g][h] < 0)
+				pos[0][g][h] = 0;
 	}
-	for (i = 0, b = B;i <= maxlength;i++, a++, B *= 2, b = B)
+	for (i = 0, b = B;i <= maxlength - tempa;i++, a++, B *= 2, b = B)
 	{
 		for (j = (int)pow(2, i);j >= 1;j--, b--)
 		{
@@ -161,33 +160,16 @@ void Attach(int a, int B)
 
 void SeekPath(int stepleft)
 {
-	int i = 0, j = 0, k = 0, l = 0, m, n, x, activeCount = 0;
-	//int o, p;//more spaces involved
-	for (m = 1;m <= maxlength;m++)
-	{
-		for (n = 1;n <= (int)pow(2, m);n++)
-		{
-			if (pos[0][m][n] > 1)
-			{
-				activeCount++;
-				break;
-			}
-		}
-	}
 	DuplicatePos(stepleft, 'b');
-	//printf("stepleft:%d\n",stepleft);
-	//DisplayPrev(stepleft);
-	for (x = 0; x <= activeCount;x++)
+	int i = 0, j = 0, k = 0, l = 0, x = 0, y = 0, activeCount = 0;
+	//int o, p;//more spaces involved
+	for (x = 0;x <= y;x++)
 	{
-		if (x != 0)
-		{
-			Active(x);
-			//printf("active count:%d stepleft:%d\n", activeCount, stepleft);
-			Compare(x, 0, stepleft, 1);
-		}
+		DuplicatePos(stepleft + maxstep, 'b');
+		Compare(x, 0, stepleft, 1);
 		if (stepleft > 0)
 		{
-			DuplicatePos((stepleft + maxstep), 'b');
+			DuplicatePos((stepleft + maxstep + maxstep), 'b');
 			for (i = 1;i <= maxlength;i++)
 			{
 				for (j = 1;j <= (int)pow(2, i);j++)
@@ -197,7 +179,7 @@ void SeekPath(int stepleft)
 					else
 					{
 						Detach(i, j);
-						DuplicatePos(stepleft + maxstep + maxstep, 'b');
+						DuplicatePos(stepleft + maxstep + maxstep + maxstep, 'b');
 						for (k = 1;k <= maxlength;k++)//k = 0 need to examine
 						{
 							for (l = 1;l <= (int)pow(2, k);l++)
@@ -218,9 +200,9 @@ void SeekPath(int stepleft)
 										}
 										else
 										{
-											Active(activeCount - x);
-											SaveStep(i, j, k, l, activeCount - x, stepleft);
-											Compare(x, activeCount - x, stepleft, 0);
+											activeCount = Active(1);
+											SaveStep(i, j, k, l, x, stepleft);
+											Compare(x, activeCount, stepleft, 0);
 											//printf("1");
 										}
 									}
@@ -241,9 +223,9 @@ void SeekPath(int stepleft)
 											}
 											else
 											{
-												Active(activeCount - x);
+												activeCount = Active(1);
 												SaveStep(i, j, k, l - 1, x, stepleft);
-												Compare(x, activeCount - x, stepleft, 0);
+												Compare(x, activeCount, stepleft, 0);
 												//printf("2");
 											}
 										}
@@ -261,9 +243,9 @@ void SeekPath(int stepleft)
 											}
 											else
 											{
-												Active(activeCount - x);
+												activeCount = Active(1);
 												SaveStep(i, j, k, l, x, stepleft);
-												Compare(x, activeCount - x, stepleft, 0);
+												Compare(x, activeCount, stepleft, 0);
 												//printf("3");
 											}
 										}
@@ -283,12 +265,12 @@ void SeekPath(int stepleft)
 											}
 											else
 											{
-												Active(activeCount - x);
+												activeCount = Active(1);
 												SaveStep(i, j, k, l - 1, x, stepleft);
-												Compare(x, activeCount - x, stepleft, 0);
+												Compare(x, activeCount, stepleft, 0);
 												//printf("4");
 											}
-											DuplicatePos(stepleft + maxstep + maxstep, 'r');
+											DuplicatePos(stepleft + maxstep + maxstep + maxstep, 'r');
 
 											//attach right
 											Attach(k, l);
@@ -303,34 +285,36 @@ void SeekPath(int stepleft)
 											}
 											else
 											{
-												Active(activeCount - x);
+												activeCount = Active(1);
 												SaveStep(i, j, k, l, x, stepleft);
-												Compare(x, activeCount - x, stepleft, 0);
+												Compare(x, activeCount, stepleft, 0);
 												//printf("5");
 											}
 										}
 									}
-									DuplicatePos(stepleft + maxstep + maxstep, 'r');
+									DuplicatePos(stepleft + maxstep + maxstep + maxstep, 'r');
 								}
 							}
 						}
-						DuplicatePos(stepleft + maxstep, 'r');
+						DuplicatePos(stepleft + maxstep + maxstep, 'r');
 					}
 				}
 			}
 		}
-		DuplicatePos(stepleft, 'r');
+		DuplicatePos(stepleft + maxstep, 'r');
+		y += Active(0);
 	}
 }
 
 void SideSwitch(int a, int B)//switch between adjacent nodes
 {
-	int i, j, b, temp;
+	int i, j, b, temp, tempa;
+	tempa = a;
 	if (B % 2 == 0)
 		B -= 1;
 	B += 1;
 
-	for (i = 0, b = B;i <= maxlength;i++, a++, B *= 2, b = B)
+	for (i = 0, b = B;i <= maxlength - tempa;i++, a++, B *= 2, b = B)
 	{
 		for (j = (int)pow(2, i);j >= 1;j--, b--)
 		{
@@ -369,36 +353,43 @@ void DuplicatePos(int s, char x)//backup and restore stages in multiple steps
 	}
 }
 
-void Active(int n)
+int Active(int laststep)//1 = yes,activa all the remaining functional nodes    0 = no, active one by one
 {
-	int i, j, flag = 0;
+	int i, j, flag = 0, activeCount = 0;
+
 	for (i = 0;i <= maxlength;i++)
 	{
-		if (n == 0) return;
 		for (j = 1;j <= (int)pow(2, i);j++)
 		{
-			if (pos[0][i][j] > 1) flag = 1;
-			if (pos[0][i][j] == 2) Split(i, j);
-			if (pos[0][i][j] == 3) Extend(i, j);
-			if (pos[0][i][j] == 4) Discard(i, j);
+			if (pos[0][i][j] > 1)
+			{
+				flag = 1;
+				if (pos[0][i][j] == 2) Split(i, j);
+				else if (pos[0][i][j] == 3) Extend(i, j);
+				else if (pos[0][i][j] == 4) Discard(i, j);
+			}
 		}
 		if (flag == 1)
 		{
-			n--;
+			activeCount++;
 			flag = 0;
+			if (laststep == 0)
+				return activeCount;
 		}
 	}
+	return activeCount;
 }
 
 void Split(int a, int B)
 {
 	pos[0][a][B] = 1;
-	int i, j, b;
+	int i, j, b, tempa;
+	tempa = 0;
 	if (B % 2 == 0)
 		B -= 1;
 	B += 1;
 
-	for (i = 0, b = B;i <= maxlength;i++, a++, B *= 2, b = B)
+	for (i = 0, b = B;i <= maxlength - tempa;i++, a++, B *= 2, b = B)
 		for (j = (int)pow(2, i);j >= 1;j--, b--)
 			pos[0][a][b] = pos[0][a][b - (int)pow(2, i)];
 }
@@ -410,7 +401,7 @@ void Extend(int a, int B)
 	tempa = a;
 	tempB = B;
 
-	for (i = 0, b = B;i <= maxlength;i++, a++, B *= 2, b = B)
+	for (i = 0, b = B;i <= maxlength - tempa;i++, a++, B *= 2, b = B)
 	{
 		for (j = (int)pow(2, i);j >= 1;j--, b--)
 		{
@@ -424,9 +415,9 @@ void Extend(int a, int B)
 
 void Discard(int a, int B)
 {
-	int i, j, b;
-
-	for (i = 0, b = B;i <= maxlength;i++, a++, B *= 2, b = B)
+	int i, j, b, tempa;
+	tempa = a;
+	for (i = 0, b = B;i <= maxlength - tempa;i++, a++, B *= 2, b = B)
 		for (j = (int)pow(2, i);j >= 1;j--, b--)
 			pos[0][a][b] = 0;
 }
@@ -455,10 +446,10 @@ void Compare(int preactiveCount, int postactiveCount, int stepleft, int beforeDe
 		}
 		if (beforeDetach == 1)//function actived before detach
 		{
-			for (n = (maxstep * 3);n > (maxstep * 2) + stepleft -1;n--, currentStep++)
+			for (n = (maxstep * 3);n > (maxstep * 2) + stepleft - 1;n--, currentStep++)
 			{
 
-				if (n == (maxstep * 2) + stepleft +1)//last step
+				if (n == (maxstep * 2) + stepleft + 1)//last step
 				{
 					printf("Last Step %d: Active:%d (%d,%d) -> (%d,%d)\n", currentStep, temppos[n][0][0][7], temppos[n][0][0][3], temppos[n][0][0][4], temppos[n][0][0][5], temppos[n][0][0][6]);
 					DisplayPrev(n - maxstep - maxstep - 1);
@@ -476,7 +467,7 @@ void Compare(int preactiveCount, int postactiveCount, int stepleft, int beforeDe
 					DisplayPrev(n - maxstep - maxstep - 1);
 				}
 			}
-			
+
 		}
 		getchar();
 	}
